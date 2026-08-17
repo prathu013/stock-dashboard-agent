@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# User data (never upload your personal data to GitHub!)
+data/watchlist.json
+data/alerts.json
+data/settings.json
+data/pnl_history.json
+data/journal.json
+data/*.log
+
+# Generated reports
+reports/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Environment
+.env

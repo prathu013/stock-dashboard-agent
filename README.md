@@ -1,32 +1,23 @@
-# 📊 stock-dashboard-agent
+# 📊 Daily Stock, Crypto & Mutual Fund Analyzer — your AI financial advisor
 
-> **Your personal AI financial advisor** for stocks, crypto & mutual funds.
-> Analyzes the market for you, advises BUY / HOLD / SELL, alerts you on your
-> phone, and generates a daily PDF report — **free, no API key required**.
+A free, no-API-key dashboard that **analyzes the market for you**, **advises you like a financial advisor**, alerts you on your phone, and generates a daily PDF report.
 
-[![Python](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.x-black)](https://flask.palletsprojects.com/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+## Tabs
 
----
+### 🧠 AI Advisor (NEW)
+- **Ask-Me chat** — type "Should I buy Reliance?", "Best stocks today", "I want ₹50 lakh in 10 years", "How is my portfolio?" and it answers from live data.
+- **Full recommendation per asset** — a 0-100 "advisor score" combining technicals + fundamentals + news sentiment + forecast into BUY / HOLD / SELL with reasons and risks.
 
-## ✨ Features
+### 🎯 Planner (NEW)
+- **Risk profile** — age/horizon/appetite → auto asset allocation (equity MFs, stocks, crypto, debt, cash) with real fund & stock suggestions.
+- **Goal planner** — "₹50 lakh in 10 years" → required monthly SIP / lumpsum + which fund categories suit your horizon.
 
-### 🧠 AI Advisor
-- **Ask-Me chat** — type *"Should I buy Reliance?"*, *"Best stocks today"*, *"I want ₹50 lakh in 10 years"*, *"How is my portfolio?"* — it answers from live data.
-- **Full recommendation per asset** — a 0–100 *advisor score* combining technicals + fundamentals + news sentiment + forecast into **BUY / HOLD / SELL** with reasons and risks.
-
-### 🎯 Planner
-- **Risk profile** — age / horizon / appetite → auto asset allocation (equity MFs, stocks, crypto, debt, cash) with real fund & stock suggestions.
-- **Goal planner** — *"₹50 lakh in 10 years"* → required monthly SIP / lumpsum + which fund categories suit your horizon.
-
-### 📒 Trading Journal
+### 📒 Trading Journal (NEW)
 - Log your real buys & sells → actual realized profit/loss (FIFO), win-rate, best/worst trades, open positions.
 
 ### ⚡ Live data everywhere
 - Prices auto-refresh **every 30 seconds** with a pulsing LIVE badge.
 - **Zerodha Kite** (optional, free) → true NSE real-time prices + your real holdings.
-- **Angel One SmartAPI** (free with an Angel One account) → true NSE real-time prices + candles.
 - **Free API keys** (Twelve Data / Finnhub / Alpha Vantage) → extra live quotes via ⚙ Settings.
 
 ### 📈 Market Movers (+ Market Mood)
@@ -36,7 +27,7 @@
 ### 📊 Click any asset → full detail
 - **Candlestick chart (60 days)** with support/resistance levels
 - **Technicals** — RSI, MACD state, SMA 20/50, golden/death cross, candlestick patterns (engulfing, hammer, doji…)
-- **🔮 Forecast** — 7-day & 30-day projection with expected range
+- **🔮 Forecast** — 7-day & 30-day projection with range
 - **📰 News & sentiment** — latest headlines + positive/negative keyword score
 
 ### 🤖 Auto Picks (no manual selection needed)
@@ -44,15 +35,16 @@ Scans stocks (India + US) and top-20 crypto automatically. For each asset:
 - **Signal** — STRONG BUY / BUY / HOLD / SELL / STRONG SELL (score −100…+100 from moving averages, RSI & momentum)
 - **Entry / Stop-loss / Target** (from ATR volatility) with 2:1 reward:risk
 - **Estimated holding period** + **projected profit/loss on your ₹/$ amount**
+- **🔮 Forecast** (click any asset) — 7-day & 30-day price projection with expected range
 
 ### 🪙 Mutual Funds
 27 Indian funds ranked by a 0–100 score (returns 1M–5Y, volatility, drawdown) + **SIP calculator**.
 
 ### 🔎 Fundamentals Screener
-All NIFTY 50 + US 50 stocks with **P/E, forward P/E, market cap, dividend yield, P/B, 52-week range, sector** — combined with the technical BUY/SELL score. Sort & filter (undervalued, dividend payers, near 52-wk high…).
+All NIFTY 50 + US 50 stocks with **P/E, forward P/E, market cap, dividend yield, P/B, 52-week range, sector** — combined with the technical BUY/SELL score. Sort by valuation/score and filter (undervalued, dividend payers, near 52-wk high…).
 
 ### 🧰 Portfolio Tools
-- **Backtest** — *"If I invested ₹X in this asset 1M/3M/6M/1Y/3Y/5Y ago, what would it be worth now?"* (with CAGR & chart)
+- **Backtest** — "If I invested ₹X in this asset 1M/3M/6M/1Y/3Y/5Y ago, what would it be worth now?" (with CAGR & chart)
 - **Compare** — two assets side-by-side: 90-day normalized chart + return / volatility / drawdown
 - **P&L history** — daily snapshot of your portfolio profit/loss, charted automatically
 
@@ -68,40 +60,28 @@ Your watchlist with live **profit/loss in ₹/$ and %** — saved automatically.
 
 ### ✉️ Email + 📱 Telegram Alerts & Daily Advisory (⚙️ Settings)
 Get alerts **on your phone even when the dashboard is closed**:
-- **Email** — configure your SMTP (Gmail app-password) and press *Send test email*.
-- **Telegram** (free) — create a bot with @BotFather, paste the token, auto-find your chat id. You can then chat with your advisor from Telegram (`/help`, `/market`, `/best`, `/funds`, `/portfolio`, `/ask should I buy Reliance?`) and receive price alerts + the daily 8 AM summary.
+- **Email** — configure your SMTP (Gmail app-password) and press **Send test email**.
+- **Telegram** (free) — create a bot with @BotFather, paste the token, auto-find your chat id. You can then **chat with your advisor from Telegram** (`/help`, `/market`, `/best`, `/funds`, `/portfolio`, `/ask should I buy Reliance?`) and receive price alerts + the daily 8 AM summary.
+Credentials stay in your workspace (`data/settings.json`).
 
 ### 📄 Daily PDF Report
 **📄 PDF** button → 2-page report (auto picks, fund leaders, movers, your P&L). Also saved in `reports/`.
 
----
+## Run it yourself
 
-## 🚀 Run it yourself
+**One-click (recommended):**
+- Windows: double-click **`Start_Dashboard.bat`** (installs packages + opens browser automatically)
+- Mac/Linux: run **`./start.sh`**
 
-### One-click (recommended)
-- **Windows:** double-click **`Start_Dashboard.bat`** (installs packages + opens browser automatically)
-- **Mac/Linux:** run **`./start.sh`**
-
-### Manual
+**Manual:**
 ```bash
 cd stock-dashboard
 pip install -r requirements.txt            # core (required)
 pip install -r requirements-optional.txt   # optional: Zerodha / Angel One
-python app.py                              # opens at http://localhost:8000
+python app.py          # opens at http://localhost:8000
 ```
 
----
-
-## ☁️ Deploy online (run 24/7, free)
-
-See **[DEPLOY.md](DEPLOY.md)** for full steps:
-1. Push this repo to GitHub.
-2. Deploy free on **Render** (or Railway) — it auto-detects `requirements.txt` + `Procfile`.
-3. You get a public URL that works on your phone anywhere, and alerts fire even when your PC is off.
-
----
-
-## 🔌 Data sources (all free)
+## Data sources (all free)
 
 | Market | Source | Notes |
 |---|---|---|
@@ -111,46 +91,34 @@ See **[DEPLOY.md](DEPLOY.md)** for full steps:
 | **Real-time NSE** | **Angel One SmartAPI** (free with Angel One account) | true live prices + candles |
 | **Real-time NSE** | **Zerodha Kite** (free account) | true live prices + holdings |
 | Fundamentals | Yahoo Finance (yfinance) | P/E, mkt cap, dividend… |
-| Mutual funds | AMFI via [mfapi.in](https://www.mfapi.in) | official NAVs, post-close |
+| Mutual funds | AMFI via mfapi.in | official NAVs, post-close |
 | USD→INR | Yahoo Finance `INR=X` | for crypto ₹ pricing |
 
 **Google Finance** needs no key and works automatically as a fallback when Yahoo is blocked (toggle in ⚙ Settings). **Angel One** is genuinely free for account holders — connect it in ⚙ Settings for true NSE real-time prices.
 
----
+## Files
 
-## 📁 Project structure
+- `app.py` — Flask backend (data, watchlist, signals, screener, tools, alerts, market mood, portfolio, advisor, planner, journal)
+- `advisor.py` — AI advisor engine (BUY/SELL recommendation + ask-me chat)
+- `planner.py` — risk profile, asset allocation, goal planner
+- `journal.py` — trading journal with FIFO realized P&L
+- `providers.py` — optional free API-key providers (Twelve Data, Finnhub, Alpha Vantage)
+- `kite_api.py` — optional Zerodha Kite real-time prices
+- `angel_api.py` — optional Angel One SmartAPI real-time NSE (free)
+- `google_finance.py` — free Google Finance fallback (no key)
+- `analysis.py` — technical indicators & scoring
+- `technicals.py` — candlesticks, MACD, support/resistance, patterns
+- `forecast.py` — 7/30-day price projections
+- `news.py` — Google News RSS + keyword sentiment
+- `portfolio.py` — portfolio health + Indian capital-gains tax
+- `funds.py` — mutual-fund NAVs, returns, scoring
+- `alerts.py` — price-alert store & triggers
+- `mailer.py` — SMTP email + settings store
+- `telegram_bot.py` — Telegram bot (phone alerts + advisor chat)
+- `report.py` — daily PDF report
+- `Start_Dashboard.bat` / `start.sh` — one-click launchers
+- `static/` — dashboard UI
+- `data/` — watchlist, alerts, settings, pnl_history (auto-created)
+- `reports/` — generated PDFs
 
-| File | Purpose |
-|---|---|
-| `app.py` | Flask backend (data, watchlist, signals, screener, tools, alerts, market mood, portfolio, advisor, planner, journal) |
-| `advisor.py` | AI advisor engine (BUY/SELL recommendation + ask-me chat) |
-| `planner.py` | Risk profile, asset allocation, goal planner |
-| `journal.py` | Trading journal with FIFO realized P&L |
-| `providers.py` | Optional free API-key providers (Twelve Data, Finnhub, Alpha Vantage) |
-| `kite_api.py` | Optional Zerodha Kite real-time prices |
-| `angel_api.py` | Optional Angel One SmartAPI real-time NSE (free) |
-| `google_finance.py` | Free Google Finance fallback (no key) |
-| `analysis.py` | Technical indicators & scoring |
-| `technicals.py` | Candlesticks, MACD, support/resistance, patterns |
-| `forecast.py` | 7/30-day price projections |
-| `news.py` | Google News RSS + keyword sentiment |
-| `portfolio.py` | Portfolio health + Indian capital-gains tax |
-| `funds.py` | Mutual-fund NAVs, returns, scoring |
-| `alerts.py` | Price-alert store & triggers |
-| `mailer.py` | SMTP email + settings store |
-| `telegram_bot.py` | Telegram bot (phone alerts + advisor chat) |
-| `report.py` | Daily PDF report |
-| `Start_Dashboard.bat` / `start.sh` | One-click launchers |
-| `static/` | Dashboard UI |
-| `data/` | watchlist, alerts, settings, pnl_history (auto-created) |
-| `reports/` | Generated PDFs |
-
----
-
-## ⚠️ Disclaimer
-
-**Not financial advice.** Signals, forecasts, fund scores and backtests are statistical estimates on free/delayed data — markets can always go against you. Always use a stop-loss and invest only what you can afford to lose.
-
-## 📄 License
-
-[MIT](LICENSE)
+⚠️ **Not financial advice.** Signals, forecasts, fund scores and backtests are statistical estimates on free/delayed data — markets can always go against you. Always use a stop-loss and invest only what you can afford to lose.
