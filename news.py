@@ -18,6 +18,12 @@ UA = {
 }
 SESSION = requests.Session()
 SESSION.headers.update(UA)
+try:
+    from requests.adapters import HTTPAdapter
+    for _proto in ("http://", "https://"):
+        SESSION.mount(_proto, HTTPAdapter(pool_connections=20, pool_maxsize=20))
+except Exception:
+    pass
 
 POSITIVE = re.compile(
     r"\b(rally|rallying|surge|surges|soar|soars|jump|jumps|gain|gains|profit|profits|"

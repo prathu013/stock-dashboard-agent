@@ -23,6 +23,12 @@ UA = {
 }
 SESSION = requests.Session()
 SESSION.headers.update(UA)
+try:
+    from requests.adapters import HTTPAdapter
+    for _proto in ("http://", "https://"):
+        SESSION.mount(_proto, HTTPAdapter(pool_connections=20, pool_maxsize=20))
+except Exception:
+    pass
 
 MASTER_TTL = 7 * 86400          # master list re-fetched weekly
 NAV_TTL = 6 * 3600              # NAV history cached 6 h

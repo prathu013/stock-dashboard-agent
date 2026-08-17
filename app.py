@@ -11,6 +11,7 @@ Run:  python app.py   ->  http://0.0.0.0:8000
 import os
 import json
 import re
+import sys
 import time
 import uuid
 import threading
@@ -19,6 +20,34 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 from flask import Flask, request, jsonify, send_from_directory, send_file
+
+# Keep logs clean: "Connection pool is full" is a harmless urllib3 notice
+# (the request still succeeds). Raise its level so it doesn't spam the logs.
+import logging
+logging.getLogger("urllib3.connectionpool").setLevel(logging.ERROR)
+
+# ---------------------------------------------------------------- quiet logging
+# On hosts like Render the app is restarted on every deploy; background threads
+# get killed mid-work and ThreadPoolExecutor can raise a noisy traceback during
+# interpreter shutdown. Suppress those so the logs stay clean.
+def _quiet_thread_excepthook(args):
+    exc = getattr(args, "exc_value", None)
+    if exc is not None and isinstance(exc, RuntimeError) and "interpreter shutdown" in str(exc):
+        return
+    import traceback
+    traceback.print_exception(args.exc_type, args.exc_value, args.exc_traceback)
+
+
+threading.excepthook = _quiet_thread_excepthook
+
+
+def _quiet_excepthook(exc_type, exc, tb):
+    if isinstance(exc, RuntimeError) and "interpreter shutdown" in str(exc):
+        return
+    sys.__excepthook__(exc_type, exc, tb)
+
+
+sys.excepthook = _quiet_excepthook
 
 import analysis
 import funds as funds_mod
@@ -52,6 +81,19 @@ UA = {
 SESSION = requests.Session()
 SESSION.headers.update(UA)
 
+# Bigger connection pool so parallel fetches don't spam the logs with
+# "Connection pool is full, discarding connection" warnings.
+try:
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+    _retry = Retry(total=2, backoff_factor=0.5,
+                   status_forcelist=[429, 500, 502, 503, 504])
+    for _proto in ("http://", "https://"):
+        SESSION.mount(_proto, HTTPAdapter(pool_connections=100, pool_maxsize=100,
+                                          max_retries=_retry))
+except Exception:
+    pass
+
 # ---------------------------------------------------------------- universes
 NIFTY50 = [
     "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS",
@@ -72,6 +114,81 @@ US50 = [
     "ABBV", "NFLX", "AMD", "CRM", "BAC", "CVX", "KO", "WMT", "MRK", "PEP",
     "ADBE", "TMO", "CSCO", "ACN", "MCD", "IBM", "LIN", "ABT", "GE", "CAT",
     "INTU", "QCOM", "TXN", "AMGN", "PFE", "DIS", "GS", "MS", "VZ", "NKE",
+]
+
+# ---------------------------------------------------------------- ETFs & F&O
+# (symbol, display name, currency)
+ETF_IN = [
+    ("NIFTYBEES.NS", "Nippon India Nifty 50 BeES", "INR"),
+    ("BANKBEES.NS", "Nippon India Bank BeES", "INR"),
+    ("JUNIORBEES.NS", "Nippon India Junior BeES", "INR"),
+    ("ITBEES.NS", "Nippon India IT BeES", "INR"),
+    ("GOLDBEES.NS", "Nippon India Gold BeES", "INR"),
+    ("HDFCSENSEX.NS", "HDFC S&P BSE Sensex ETF", "INR"),
+    ("SETFNIF50.NS", "SBI Nifty 50 ETF", "INR"),
+    ("CPSEETF.NS", "CPSE ETF", "INR"),
+    ("PSUBNKBEES.NS", "Nippon India PSU Bank BeES", "INR"),
+    ("PHARMABEES.NS", "Nippon India Pharma BeES", "INR"),
+    ("AUTOBEES.NS", "Nippon India Auto BeES", "INR"),
+    ("MIDCAPETF.NS", "Mirae Asset Midcap ETF", "INR"),
+    ("INFRABEES.NS", "Nippon India Infra BeES", "INR"),
+    ("MOM100.NS", "Motilal Oswal MOSt Midcap 100 ETF", "INR"),
+]
+
+ETF_US = [
+    ("SPY", "SPDR S&P 500 ETF", "USD"),
+    ("QQQ", "Invesco QQQ (Nasdaq 100)", "USD"),
+    ("VOO", "Vanguard S&P 500 ETF", "USD"),
+    ("IWM", "iShares Russell 2000", "USD"),
+    ("DIA", "SPDR Dow Jones ETF", "USD"),
+    ("GLD", "SPDR Gold Trust", "USD"),
+    ("SLV", "iShares Silver Trust", "USD"),
+    ("EEM", "iShares MSCI Emerging Markets", "USD"),
+    ("VTI", "Vanguard Total Market", "USD"),
+    ("TQQQ", "ProShares UltraPro QQQ (3x)", "USD"),
+]
+
+# US index & commodity futures (real futures prices from Yahoo)
+FNO_FUTURES = [
+    ("ES=F", "E-Mini S&P 500 Future", "USD"),
+    ("NQ=F", "E-Mini Nasdaq 100 Future", "USD"),
+    ("YM=F", "E-Mini Dow Future", "USD"),
+    ("RTY=F", "E-Mini Russell 2000 Future", "USD"),
+    ("GC=F", "Gold Future", "USD"),
+    ("CL=F", "Crude Oil WTI Future", "USD"),
+    ("SI=F", "Silver Future", "USD"),
+    ("NG=F", "Natural Gas Future", "USD"),
+]
+
+# Indian index F&O underlyings (spot indices that drive NIFTY/BANKNIFTY F&O)
+FNO_INDEX = [
+    ("^NSEI", "NIFTY 50 (F&O underlying)", "INR"),
+    ("^NSEBANK", "BANK NIFTY (F&O underlying)", "INR"),
+    ("^CNXIT", "NIFTY IT (F&O underlying)", "INR"),
+]
+
+# Liquid Indian F&O stocks (all have active derivatives contracts on NSE)
+FNO_STOCKS = [
+    ("RELIANCE.NS", "Reliance Industries", "INR"),
+    ("TCS.NS", "Tata Consultancy Services", "INR"),
+    ("HDFCBANK.NS", "HDFC Bank", "INR"),
+    ("ICICIBANK.NS", "ICICI Bank", "INR"),
+    ("SBIN.NS", "State Bank of India", "INR"),
+    ("INFY.NS", "Infosys", "INR"),
+    ("BHARTIARTL.NS", "Bharti Airtel", "INR"),
+    ("ITC.NS", "ITC Ltd", "INR"),
+    ("LT.NS", "Larsen & Toubro", "INR"),
+    ("AXISBANK.NS", "Axis Bank", "INR"),
+    ("KOTAKBANK.NS", "Kotak Mahindra Bank", "INR"),
+    ("TITAN.NS", "Titan Company", "INR"),
+    ("M&M.NS", "Mahindra & Mahindra", "INR"),
+    ("BAJFINANCE.NS", "Bajaj Finance", "INR"),
+    ("MARUTI.NS", "Maruti Suzuki", "INR"),
+    ("TATASTEEL.NS", "Tata Steel", "INR"),
+    ("HINDALCO.NS", "Hindalco Industries", "INR"),
+    ("SUNPHARMA.NS", "Sun Pharma", "INR"),
+    ("DRREDDY.NS", "Dr Reddy's Labs", "INR"),
+    ("ADANIENT.NS", "Adani Enterprises", "INR"),
 ]
 
 # ---------------------------------------------------------------- caches
@@ -651,14 +768,15 @@ def coin_quote(coin_id, ticker):
     return None
 
 
-def _signal_for_stock(hist):
+def _signal_for_stock(hist, typ=None):
     a = analysis.analyze(hist["closes"], hist["highs"], hist["lows"],
                          {"price": hist["price"]})
     if not a:
         return None
+    if typ is None:
+        typ = "stock_in" if hist["symbol"].endswith((".NS", ".BO")) else "stock_us"
     return {
-        "type": "stock_in" if hist["symbol"].endswith((".NS", ".BO")) else "stock_us",
-        "symbol": hist["symbol"], "ticker": hist["symbol"],
+        "type": typ, "symbol": hist["symbol"], "ticker": hist["symbol"],
         "name": hist["name"], "currency": hist["currency"],
         "price": hist["price"], "change_pct": hist["change_pct"],
         "sparkline": hist["closes"], **a,
@@ -795,6 +913,78 @@ def _build_overview(crypto_items, in_items, us_items):
             "avg_change": round(sum(changes) / len(changes), 2) if changes else None,
         }
     return ov
+
+
+# ---------------------------------------------------------------- ETFs & F&O signals
+_etf_cache = {"ts": 0.0, "data": None, "busy": False}
+_etf_lock = threading.Lock()
+ETF_TTL = 600
+
+
+def _signal_universe(universe, typ):
+    """Fetch history + full signal for a list of (symbol, name, currency)."""
+    out = []
+    with ThreadPoolExecutor(max_workers=12) as ex:
+        futures = {ex.submit(yahoo_history, sym, "3mo"): (sym, nm, cur)
+                   for sym, nm, cur in universe}
+        for fut in as_completed(futures):
+            sym, nm, cur = futures[fut]
+            try:
+                h = fut.result()
+            except Exception:
+                h = None
+            if not h or not h.get("closes"):
+                continue
+            # use our display name when Yahoo has none / a junk name
+            if not h.get("name") or h["name"] == sym:
+                h["name"] = nm
+            h["currency"] = cur
+            s = _signal_for_stock(h, typ=typ)
+            if s:
+                out.append(s)
+    out.sort(key=lambda x: -x["score"])
+    return out
+
+
+def build_etf_fno():
+    """Signals for ETFs (India/US) and F&O (US futures, Indian index + stocks)."""
+    with _etf_lock:
+        if _etf_cache["data"] and time.time() - _etf_cache["ts"] < ETF_TTL:
+            return _etf_cache["data"]
+        if _etf_cache["busy"]:
+            return _etf_cache["data"] or {"etf_in": [], "etf_us": [], "fno_futures": [],
+                                          "fno_index": [], "fno_stocks": []}
+
+    _etf_cache["busy"] = True
+    try:
+        data = {
+            "etf_in": _signal_universe(ETF_IN, "etf_in"),
+            "etf_us": _signal_universe(ETF_US, "etf_us"),
+            "fno_futures": _signal_universe(FNO_FUTURES, "fno_futures"),
+            "fno_index": _signal_universe(FNO_INDEX, "fno_index"),
+            "fno_stocks": _signal_universe(FNO_STOCKS, "fno_stocks"),
+            "updated_at": time.time(),
+        }
+        with _etf_lock:
+            _etf_cache["ts"] = time.time()
+            _etf_cache["data"] = data
+            _etf_cache["busy"] = False
+        return data
+    except Exception:
+        with _etf_lock:
+            _etf_cache["busy"] = False
+        return _etf_cache["data"] or {"etf_in": [], "etf_us": [], "fno_futures": [],
+                                      "fno_index": [], "fno_stocks": []}
+
+
+def wait_for_etf_fno(timeout=20):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        d = build_etf_fno() or {}
+        if d.get("etf_in") or d.get("fno_stocks"):
+            return d
+        time.sleep(2)
+    return build_etf_fno() or {}
 
 
 # ---------------------------------------------------------------- screener (fundamentals)
@@ -1163,6 +1353,30 @@ def index():
     return send_from_directory(app.static_folder, "index.html")
 
 
+# Inline SVG favicon served without a file (avoids 404 entries in the logs)
+_FAVICON = (
+    "data:image/svg+xml,"
+    "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E"
+    "%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E"
+    "%3Cpath d='M6 22l5-6 4 4 6-8 5 6' stroke='%2316c784' stroke-width='2.5' "
+    "fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E"
+    "%3C/svg%3E"
+)
+
+
+@app.route("/favicon.ico")
+def favicon():
+    from flask import Response
+    return Response(status=204)
+
+
+@app.route("/apple-touch-icon.png")
+@app.route("/apple-touch-icon-precomposed.png")
+def apple_icon():
+    from flask import Response
+    return Response(status=204)
+
+
 @app.route("/api/movers")
 def api_movers():
     return jsonify(build_movers())
@@ -1171,6 +1385,11 @@ def api_movers():
 @app.route("/api/signals")
 def api_signals():
     return jsonify(build_signals())
+
+
+@app.route("/api/etf_fno")
+def api_etf_fno():
+    return jsonify(wait_for_etf_fno(20))
 
 
 @app.route("/api/watchlist", methods=["GET", "POST"])
@@ -2045,13 +2264,44 @@ def _daily_email_loop():
         time.sleep(30)
 
 
+def _staggered_warm():
+    """Warm caches one at a time so free-tier hosts (Render) don't get
+    hammered by 100+ concurrent API calls at cold start."""
+    try:
+        build_signals()          # most important (Auto Picks / Advisor)
+    except Exception:
+        pass
+    try:
+        build_etf_fno()          # ETFs & F&O signals
+    except Exception:
+        pass
+    time.sleep(20)
+    try:
+        funds_mod.build_funds()
+    except Exception:
+        pass
+    time.sleep(15)
+    try:
+        build_screener()         # heavy (~30s of yfinance calls) - do it last
+    except Exception:
+        pass
+
+
 if __name__ == "__main__":
-    threading.Thread(target=_warm_signals, daemon=True).start()
-    threading.Thread(target=_warm_funds, daemon=True).start()
+    threading.Thread(target=_staggered_warm, daemon=True).start()
     threading.Thread(target=_alerts_loop, daemon=True).start()
     threading.Thread(target=_pnl_snapshot_loop, daemon=True).start()
-    threading.Thread(target=build_screener, daemon=True).start()
     threading.Thread(target=_warm_market, daemon=True).start()
     threading.Thread(target=_daily_email_loop, daemon=True).start()
     threading.Thread(target=_telegram_loop, daemon=True).start()
-    app.run(host="0.0.0.0", port=8000, debug=False, threaded=True)
+
+    # PORT env var is used by cloud hosts (Render/Railway/Heroku);
+    # defaults to 8000 for local use.
+    port = int(os.environ.get("PORT", 8000))
+    try:
+        from waitress import serve
+        print(f"[stock-dashboard-agent] serving on port {port} (waitress)")
+        serve(app, host="0.0.0.0", port=port, threads=16)
+    except ImportError:
+        print(f"[stock-dashboard-agent] serving on port {port} (flask dev server)")
+        app.run(host="0.0.0.0", port=port, debug=False, threaded=True)

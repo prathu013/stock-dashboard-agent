@@ -2,11 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
 <title>Daily Stock & Crypto Analyzer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Cpath d='M6 22l5-6 4 4 6-8 5 6' stroke='%2316c784' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <!-- Boot overlay: shown while the first data load is in progress -->
+  <div id="bootOverlay" class="boot-overlay">
+    <div class="boot-card">
+      <div class="spinner"></div>
+      <div class="boot-title">Loading your market advisor…</div>
+      <div class="boot-sub" id="bootStatus">Fetching live market data</div>
+    </div>
+  </div>
+
   <header>
     <div class="brand">
       <div class="logo">📊</div>
@@ -28,6 +39,7 @@
     <button class="tab active" data-tab="movers">📈 Market Movers</button>
     <button class="tab" data-tab="advisor">🧠 Advisor</button>
     <button class="tab" data-tab="signals">🤖 Auto Picks</button>
+    <button class="tab" data-tab="etf_fno">🧺 ETF &amp; F&amp;O</button>
     <button class="tab" data-tab="funds">🪙 Mutual Funds</button>
     <button class="tab" data-tab="screener">🔎 Screener</button>
     <button class="tab" data-tab="planner">🎯 Planner</button>
@@ -120,6 +132,66 @@
         </table>
       </div>
       <p class="footnote">Signals are computed from 90-day technicals (moving averages, RSI, ATR). They are estimates for learning/analysis — markets can go against you, always use a stop-loss. Not financial advice.</p>
+    </section>
+
+    <!-- ============ ETF & F&O ============ -->
+    <section id="tab-etf_fno" class="panel">
+      <div class="signals-head">
+        <h2>🧺 ETF &amp; F&amp;O Signals</h2>
+        <p class="sub">Exchange-Traded Funds and Futures &amp; Options underlyings — each rated STRONG BUY / BUY / HOLD / SELL / STRONG SELL with entry, stop-loss, target (2:1 reward:risk), estimated holding period and projected profit/loss on your investment.</p>
+      </div>
+      <div class="signals-controls">
+        <div class="subtabs" id="etfSubtabs">
+          <button class="subtab active" data-market="etf_in">🇮🇳 Indian ETFs</button>
+          <button class="subtab" data-market="etf_us">🇺🇸 US ETFs</button>
+          <button class="subtab" data-market="fno_futures">🌍 US Futures</button>
+          <button class="subtab" data-market="fno_index">🇮🇳 Index F&amp;O</button>
+          <button class="subtab" data-market="fno_stocks">📜 Indian F&amp;O Stocks</button>
+        </div>
+        <div class="sig-tools">
+          <label class="amt amt-big">💰 My investment (₹)
+            <input id="etfAmtInr" type="number" value="10000" min="100" step="500">
+          </label>
+          <label class="amt amt-big">💵 My investment ($)
+            <input id="etfAmtUsd" type="number" value="1000" min="50" step="50">
+          </label>
+          <select id="etfFilter">
+            <option value="all">All signals</option>
+            <option value="STRONG BUY">Strong Buy</option>
+            <option value="BUY">Buy</option>
+            <option value="HOLD">Hold</option>
+            <option value="SELL">Sell</option>
+            <option value="STRONG SELL">Strong Sell</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="etfTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Instrument</th>
+              <th class="num">Price</th>
+              <th>Score</th>
+              <th>Signal</th>
+              <th>Trend</th>
+              <th class="num">RSI</th>
+              <th class="num">Entry</th>
+              <th class="num">Stop-loss</th>
+              <th class="num">Target</th>
+              <th class="num">R:R</th>
+              <th>Est. hold</th>
+              <th class="num">Profit if target</th>
+              <th class="num">Loss if stop</th>
+              <th>Watch</th>
+            </tr>
+          </thead>
+          <tbody id="etfBody">
+            <tr><td colspan="15" class="empty">Analyzing ETFs &amp; F&amp;O… (first run takes ~15 seconds)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="footnote">Futures prices are real contract prices (e.g. "Crude Oil Sep 26"). Indian index rows use the spot index that drives NIFTY/BANKNIFTY derivatives; Indian F&amp;O stocks are the most-liquid NSE F&amp;O underlyings. Signals are statistical estimates — always use a stop-loss. Not financial advice.</p>
     </section>
 
     <!-- ============ MUTUAL FUNDS ============ -->

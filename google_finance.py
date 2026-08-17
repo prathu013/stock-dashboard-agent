@@ -15,6 +15,12 @@ UA = {
 }
 SESSION = requests.Session()
 SESSION.headers.update(UA)
+try:
+    from requests.adapters import HTTPAdapter
+    for _proto in ("http://", "https://"):
+        SESSION.mount(_proto, HTTPAdapter(pool_connections=20, pool_maxsize=20))
+except Exception:
+    pass
 
 
 def _gf_candidates(symbol):

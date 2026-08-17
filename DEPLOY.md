@@ -38,6 +38,12 @@ git push -u origin main
 
 (Replace `YOUR-USERNAME` with your GitHub username.)
 
+> **On Windows?** The easiest way is to double-click **`Push_to_GitHub.bat`** —
+> it does all of the above automatically and only asks for your repo URL the
+> first time. If you prefer typing commands, use **Command Prompt (cmd)** or
+> **PowerShell 7+** (the old PowerShell 5 does not support `&&` — run commands
+> one line at a time, or use `;` instead).
+
 ✅ Done — your code is now on GitHub. To update later:
 ```bash
 git add . && git commit -m "update" && git push

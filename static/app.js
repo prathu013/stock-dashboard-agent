@@ -24,6 +24,10 @@ const state = {
   market: null,
   portfolio: null,
   journal: null,
+  etfFno: null,
+  etfMarket: 'etf_in',
+  etfFilter: 'all',
+  booted: false,
 };
 
 const MARKET_LABEL = { crypto: 'Crypto', stocks_in: 'Indian Stocks', stocks_us: 'US Stocks' };
@@ -358,6 +362,9 @@ function ensureTabData(tab) {
     case 'signals':
       if (!state.signals || !(state.signals.stocks_in || []).length) loadSignals();
       break;
+    case 'etf_fno':
+      if (!state.etfFno || !(state.etfFno.etf_in || []).length) loadEtfFno();
+      break;
     case 'funds':
       if (!state.funds || !(state.funds.funds || []).length) loadFunds();
       break;
@@ -456,11 +463,50 @@ function renderSigSummary() {
     ${topHtml}`;
 }
 
+function signalRow(it, idx, amount) {
+  const profit = amount * (it.pnl_pct_target || 0) / 100;
+  const loss = amount * (it.pnl_pct_stop || 0) / 100;
+  const barCls = it.score >= 20 ? 'good' : it.score <= -20 ? 'bad' : 'mid';
+  const trendCls = it.trend === 'Uptrend' ? 'up' : it.trend === 'Downtrend' ? 'down' : '';
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="rank">${idx + 1}</td>
+    <td>
+      <div class="asset-cell" style="min-width:170px">
+        <canvas width="64" height="22"></canvas>
+        <div>
+          <div class="aname">${esc(it.name)}</div>
+          <div class="asym">${esc(it.ticker || it.symbol)}</div>
+        </div>
+      </div>
+    </td>
+    <td class="num">${fmtMoney(it.price, it.currency)}</td>
+    <td><span class="scorebar"><span class="${barCls}" style="width:${Math.min(100, Math.abs(it.score))}%"></span></span><b>${it.score}</b></td>
+    <td><span class="sig-badge ${SIG_CLASS[it.signal] || 'hold'}">${it.signal}</span></td>
+    <td><span class="trend-pill ${trendCls}">${it.trend || '—'}</span></td>
+    <td class="num ${it.rsi >= 70 ? 'down' : it.rsi <= 30 ? 'up' : ''}">${it.rsi ?? '—'}</td>
+    <td class="num">${fmtMoney(it.entry, it.currency)}</td>
+    <td class="num">${fmtMoney(it.stop, it.currency)}</td>
+    <td class="num">${fmtMoney(it.target, it.currency)}</td>
+    <td class="num">${it.rr ?? '—'}</td>
+    <td style="font-size:12px;color:var(--muted)">${esc(it.hold_label)}</td>
+    <td class="num"><span class="up">+${fmtMoney(profit, it.currency)}</span></td>
+    <td class="num"><span class="down">${fmtMoney(loss, it.currency)}</span></td>
+    <td><button class="bell-btn" title="Alert me when it hits target or stop-loss">🔔</button></td>`;
+  drawSpark(tr.querySelector('canvas'), it.sparkline, 64, 22);
+  tr.addEventListener('click', () => openDetail(it.type, it.symbol));
+  tr.querySelector('.bell-btn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await setTargetStopAlerts(it);
+  });
+  return tr;
+}
+
 function renderSignals() {
   const data = state.signals;
   const tbody = $('sigBody');
   if (!data) {
-    tbody.innerHTML = '<tr><td colspan="15" class="empty">Analyzing the market… (first run takes ~15 seconds)</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="15" class="empty"><span class="spinner-inline"></span>Analyzing the market… (first run takes ~15 seconds)</td></tr>';
     $('sigSummary').innerHTML = '';
     return;
   }
@@ -477,45 +523,81 @@ function renderSignals() {
   }
   tbody.innerHTML = '';
   items.forEach((it, idx) => {
-    const cur = it.currency === 'INR' ? '₹' : '$';
-    const amount = amtFor(it.currency);
-    const profit = amount * (it.pnl_pct_target || 0) / 100;
-    const loss = amount * (it.pnl_pct_stop || 0) / 100;
-    const barCls = it.score >= 20 ? 'good' : it.score <= -20 ? 'bad' : 'mid';
-    const trendCls = it.trend === 'Uptrend' ? 'up' : it.trend === 'Downtrend' ? 'down' : '';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="rank">${idx + 1}</td>
-      <td>
-        <div class="asset-cell" style="min-width:170px">
-          <canvas width="64" height="22"></canvas>
-          <div>
-            <div class="aname">${esc(it.name)}</div>
-            <div class="asym">${esc(it.ticker || it.symbol)}</div>
-          </div>
-        </div>
-      </td>
-      <td class="num">${fmtMoney(it.price, it.currency)}</td>
-      <td><span class="scorebar"><span class="${barCls}" style="width:${Math.min(100, Math.abs(it.score))}%"></span></span><b>${it.score}</b></td>
-      <td><span class="sig-badge ${SIG_CLASS[it.signal] || 'hold'}">${it.signal}</span></td>
-      <td><span class="trend-pill ${trendCls}">${it.trend || '—'}</span></td>
-      <td class="num ${it.rsi >= 70 ? 'down' : it.rsi <= 30 ? 'up' : ''}">${it.rsi ?? '—'}</td>
-      <td class="num">${fmtMoney(it.entry, it.currency)}</td>
-      <td class="num">${fmtMoney(it.stop, it.currency)}</td>
-      <td class="num">${fmtMoney(it.target, it.currency)}</td>
-      <td class="num">${it.rr ?? '—'}</td>
-      <td style="font-size:12px;color:var(--muted)">${esc(it.hold_label)}</td>
-      <td class="num"><span class="up">+${fmtMoney(profit, it.currency)}</span></td>
-      <td class="num"><span class="down">${fmtMoney(loss, it.currency)}</span></td>
-      <td><button class="bell-btn" title="Alert me when it hits target or stop-loss">🔔</button></td>`;
-    drawSpark(tr.querySelector('canvas'), it.sparkline, 64, 22);
-    tr.addEventListener('click', () => openDetail(it.type, it.symbol));
-    tr.querySelector('.bell-btn').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await setTargetStopAlerts(it);
-    });
-    tbody.appendChild(tr);
+    tbody.appendChild(signalRow(it, idx, amtFor(it.currency)));
   });
+}
+
+/* ---------- ETF & F&O ---------- */
+let etfTries = 0;
+async function loadEtfFno() {
+  try {
+    const data = await getJSON('/api/etf_fno');
+    if (data && ((data.etf_in && data.etf_in.length) || (data.fno_stocks && data.fno_stocks.length))) {
+      etfTries = 0;
+      state.etfFno = data;
+      renderEtfFno();
+      return;
+    }
+    etfTries++;
+    if (etfTries > 6) {
+      state.etfFno = { etf_in: [], etf_us: [], fno_futures: [], fno_index: [], fno_stocks: [], error: true };
+      renderEtfFno();
+      return;
+    }
+    setTimeout(loadEtfFno, 5000);
+  } catch (e) {
+    etfTries++;
+    if (etfTries > 6) {
+      state.etfFno = { etf_in: [], etf_us: [], fno_futures: [], fno_index: [], fno_stocks: [], error: true };
+      renderEtfFno();
+      return;
+    }
+    setTimeout(loadEtfFno, 5000);
+  }
+}
+
+function renderEtfFno() {
+  const data = state.etfFno;
+  const tbody = $('etfBody');
+  if (!data) {
+    tbody.innerHTML = '<tr><td colspan="15" class="empty"><span class="spinner-inline"></span>Analyzing ETFs &amp; F&amp;O… (first run takes ~15 seconds)</td></tr>';
+    return;
+  }
+  let items = (data[state.etfMarket] || []);
+  if (state.etfFilter !== 'all') items = items.filter((i) => i.signal === state.etfFilter);
+  if (!items.length) {
+    const err = data.error
+      ? 'Could not reach the data source. Check your internet connection.'
+      : 'No instruments match this filter right now.';
+    tbody.innerHTML = `<tr><td colspan="15" class="empty">${esc(err)}<br><br>
+      <button class="btn primary" onclick="loadEtfFno()">↻ Retry now</button></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = '';
+  items.forEach((it, idx) => {
+    tbody.appendChild(signalRow(it, idx, etfAmtFor(it.currency)));
+  });
+}
+
+function etfAmtFor(currency) {
+  const v = parseFloat(currency === 'INR' ? $('etfAmtInr').value : $('etfAmtUsd').value);
+  return isFinite(v) && v > 0 ? v : (currency === 'INR' ? 10000 : 1000);
+}
+
+function setupEtfFno() {
+  document.querySelectorAll('#etfSubtabs .subtab').forEach((t) => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('#etfSubtabs .subtab').forEach((x) => x.classList.remove('active'));
+      t.classList.add('active');
+      state.etfMarket = t.dataset.market;
+      renderEtfFno();
+    });
+  });
+  $('etfFilter').addEventListener('change', () => {
+    state.etfFilter = $('etfFilter').value;
+    renderEtfFno();
+  });
+  ['etfAmtInr', 'etfAmtUsd'].forEach((id) => $(id).addEventListener('input', renderEtfFno));
 }
 
 /* ---------- mutual funds ---------- */
@@ -1854,8 +1936,14 @@ async function loadSignals() {
 }
 
 async function loadAll() {
-  await Promise.all([loadMovers(), loadWatchlist(), loadSignals(), loadFunds(), loadAlerts(), loadScreener(), loadPnlHistory(), loadMarket(), loadPortfolioHealth(), loadJournal()]);
+  await Promise.all([loadMovers(), loadWatchlist(), loadSignals(), loadEtfFno(), loadFunds(), loadAlerts(), loadScreener(), loadPnlHistory(), loadMarket(), loadPortfolioHealth(), loadJournal()]);
   tick();
+  // hide the boot overlay once the first load finishes
+  setTimeout(() => {
+    const o = $('bootOverlay');
+    if (o) { o.classList.add('done'); setTimeout(() => o.remove(), 400); }
+    state.booted = true;
+  }, 300);
 }
 
 /* ---------- boot ---------- */
@@ -1869,11 +1957,18 @@ setupSettings();
 setupAdvisor();
 setupPlanner();
 setupJournal();
+setupEtfFno();
 ['sipAmt', 'sipYears'].forEach((id) => $(id).addEventListener('input', renderSipCard));
+// boot overlay status messages
+const bootStatus = $('bootStatus');
+if (bootStatus) {
+  setTimeout(() => bootStatus && (bootStatus.textContent = 'Scanning stocks, crypto, ETFs & F&O…'), 4000);
+}
 loadAll();
 setInterval(loadMovers, 30000);    // movers every 30 s (live)
 setInterval(loadWatchlist, 45000); // watchlist every 45 s
 setInterval(loadSignals, 600000);  // signals every 10 min
+setInterval(loadEtfFno, 600000);   // ETF & F&O every 10 min
 setInterval(loadFunds, 600000);    // funds every 10 min
 setInterval(loadAlerts, 30000);    // alerts every 30 s
 setInterval(loadScreener, 1800000); // screener every 30 min
