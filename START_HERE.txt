@@ -1,0 +1,104 @@
+============================================================
+ STOCK DASHBOARD AGENT  —  HOW TO RUN ON YOUR COMPUTER
+============================================================
+
+You downloaded:  Stock_Dashboard_Agent.zip
+
+------------------------------------------------------------
+WHAT YOU NEED (only once)
+------------------------------------------------------------
+1) Python 3.9 or newer (FREE)
+   - Windows: go to https://www.python.org/downloads/
+     click "Download Python", then during install TICK the box:
+     "Add Python to PATH"  (very important!)
+   - Mac/Linux: usually already installed.
+
+------------------------------------------------------------
+STEP 1 — UNZIP THE FOLDER
+------------------------------------------------------------
+- Right-click Stock_Dashboard_Agent.zip -> "Extract All"
+- You now have a folder called:  stock-dashboard
+
+============================================================
+ QUICK START (WINDOWS) — EASIEST WAY
+============================================================
+1. Install Python ONCE (tick "Add Python to PATH" during install):
+   https://www.python.org/downloads/
+2. Double-click:   Start_Dashboard.bat
+   - It installs everything and opens the dashboard automatically.
+
+   (Mac/Linux: double-click or run  ./start.sh)
+
+   DONE. That's it. Skip the manual steps below.
+
+============================================================
+ MANUAL SETUP (only if the one-click file didn't work)
+============================================================
+
+------------------------------------------------------------
+STEP 2 — INSTALL THE NEEDED PACKAGES (only once)
+------------------------------------------------------------
+WINDOWS:
+  1. Open the "stock-dashboard" folder.
+  2. Click in the address bar at the top, type:  cmd   and press Enter.
+     (A black Command Prompt window opens, already in this folder.)
+  3. Type this and press Enter:
+        pip install -r requirements.txt
+     Wait until it finishes (a few minutes).
+
+MAC / LINUX:
+  1. Open Terminal, go into the folder:
+        cd stock-dashboard
+  2. Run:
+        pip3 install -r requirements.txt
+
+------------------------------------------------------------
+STEP 3 — START THE DASHBOARD
+------------------------------------------------------------
+WINDOWS (same black Command Prompt window):
+        python app.py
+
+MAC / LINUX:
+        python3 app.py
+
+You will see something like:
+   * Running on http://127.0.0.1:8000
+
+------------------------------------------------------------
+STEP 4 — OPEN IT
+------------------------------------------------------------
+- Open your web browser (Chrome/Edge/Firefox).
+- Go to:   http://localhost:8000
+- That's it! The dashboard is now running.
+
+------------------------------------------------------------
+TO STOP IT
+------------------------------------------------------------
+- In the Command Prompt window press:  Ctrl + C
+
+TO RUN AGAIN LATER
+------------------------------------------------------------
+- Same as STEP 3: open cmd in the folder -> python app.py
+  then open http://localhost:8000
+
+============================================================
+ COMMON PROBLEMS
+============================================================
+- "pip is not recognized"  -> Python was not added to PATH.
+  Reinstall Python and TICK "Add Python to PATH".
+- "python is not recognized" -> same fix, or use "py app.py" instead.
+- Page says "Could not load" -> wait ~30 seconds on first run
+  (it downloads market data), then press the ↻ Refresh button.
+- Antivirus blocks it -> allow "python" through your firewall.
+
+============================================================
+ NOTE
+============================================================
+- Everything is FREE, no API key needed.
+- Stock data is ~15 min delayed; crypto is near real-time.
+- This is analysis, NOT financial advice. Always use a stop-loss.
+
+Your data (watchlist, alerts, settings) is saved in the
+"data" folder next to the code — keep it if you want to
+keep your picks.
+============================================================

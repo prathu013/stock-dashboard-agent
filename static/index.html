@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Stock & Crypto Analyzer</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">📊</div>
+      <div>
+        <h1>Daily Market Analyzer <span class="live-badge"><span class="live-dot"></span>LIVE</span></h1>
+        <p class="sub">Your AI financial advisor · stocks · crypto · mutual funds</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="updated" class="updated">Loading…</span>
+      <button id="alertsBtn" class="btn ghost" title="Price alerts">🔔 Alerts <span id="alertCount" class="pill hidden"></span></button>
+      <button id="pdfBtn" class="btn ghost" title="Download today's PDF report">📄 PDF</button>
+      <button id="settingsBtn" class="btn ghost" title="Email alert settings">⚙️</button>
+      <button id="refreshBtn" class="btn ghost" title="Refresh now">↻ Refresh</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="movers">📈 Market Movers</button>
+    <button class="tab" data-tab="advisor">🧠 Advisor</button>
+    <button class="tab" data-tab="signals">🤖 Auto Picks</button>
+    <button class="tab" data-tab="funds">🪙 Mutual Funds</button>
+    <button class="tab" data-tab="screener">🔎 Screener</button>
+    <button class="tab" data-tab="planner">🎯 Planner</button>
+    <button class="tab" data-tab="tools">🧰 Tools</button>
+    <button class="tab" data-tab="journal">📒 Journal</button>
+    <button class="tab" data-tab="picks">⭐ My Picks <span id="pickCount" class="pill"></span></button>
+  </nav>
+
+  <main>
+    <!-- ============ MARKET MOVERS ============ -->
+    <section id="tab-movers" class="panel active">
+      <div id="marketMood" class="market-mood">
+        <div class="loader">Loading market mood…</div>
+      </div>
+      <div class="subtabs">
+        <button class="subtab active" data-market="crypto">🪙 Crypto</button>
+        <button class="subtab" data-market="stocks_in">🇮🇳 Indian Stocks</button>
+        <button class="subtab" data-market="stocks_us">🇺🇸 US Stocks</button>
+      </div>
+      <div id="moversGrid" class="movers-grid">
+        <div class="loader">Loading market data…</div>
+      </div>
+      <p class="footnote">Free data: CoinGecko (crypto, ₹) &amp; Yahoo Finance (stocks). Prices may be delayed ~15 min. Not financial advice.</p>
+    </section>
+
+    <!-- ============ AUTO PICKS ============ -->
+    <section id="tab-signals" class="panel">
+      <div class="invest-banner">
+        <div class="ib-step"><span class="ib-num">1</span><div><b>Enter your investment</b><span>How much money you want to put in</span></div></div>
+        <div class="ib-arrow">→</div>
+        <div class="ib-step"><span class="ib-num">2</span><div><b>Pick a market</b><span>Crypto · Indian · US</span></div></div>
+        <div class="ib-arrow">→</div>
+        <div class="ib-step"><span class="ib-num">3</span><div><b>See your picks</b><span>Stocks ranked with your profit/loss</span></div></div>
+      </div>
+      <div class="signals-head">
+        <h2>🤖 Auto Stock Picks — analyzed for you</h2>
+        <p class="sub">The engine scans every market, rates each asset (BUY/HOLD/SELL), and gives you an entry price, stop-loss, target, how long to hold, and the profit/loss you can expect on your investment.</p>
+      </div>
+
+      <div class="signals-controls">
+        <div class="subtabs" id="sigSubtabs">
+          <button class="subtab active" data-market="crypto">🪙 Crypto</button>
+          <button class="subtab" data-market="stocks_in">🇮🇳 Indian Stocks</button>
+          <button class="subtab" data-market="stocks_us">🇺🇸 US Stocks</button>
+        </div>
+        <div class="sig-tools">
+          <label class="amt amt-big">💰 My investment (₹)
+            <input id="amtInr" type="number" value="10000" min="100" step="500">
+          </label>
+          <label class="amt amt-big">💵 My investment ($)
+            <input id="amtUsd" type="number" value="1000" min="50" step="50">
+          </label>
+          <select id="sigFilter">
+            <option value="all">All signals</option>
+            <option value="STRONG BUY">Strong Buy</option>
+            <option value="BUY">Buy</option>
+            <option value="HOLD">Hold</option>
+            <option value="SELL">Sell</option>
+            <option value="STRONG SELL">Strong Sell</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="sigSummary" class="sig-summary"></div>
+
+      <div class="table-wrap">
+        <table id="sigTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Asset</th>
+              <th class="num">Price</th>
+              <th>Score</th>
+              <th>Signal</th>
+              <th>Trend</th>
+              <th class="num">RSI</th>
+              <th class="num">Entry</th>
+              <th class="num">Stop-loss</th>
+              <th class="num">Target</th>
+              <th class="num">R:R</th>
+              <th>Est. hold</th>
+              <th class="num">Profit if target</th>
+              <th class="num">Loss if stop</th>
+              <th>Watch</th>
+            </tr>
+          </thead>
+          <tbody id="sigBody">
+            <tr><td colspan="15" class="empty">Analyzing the market… (first run takes ~15 seconds)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="footnote">Signals are computed from 90-day technicals (moving averages, RSI, ATR). They are estimates for learning/analysis — markets can go against you, always use a stop-loss. Not financial advice.</p>
+    </section>
+
+    <!-- ============ MUTUAL FUNDS ============ -->
+    <section id="tab-funds" class="panel">
+      <div class="signals-head">
+        <h2>🪙 Mutual Fund Analysis</h2>
+        <p class="sub">Popular Indian mutual funds ranked by a 0–100 score built from 1M/3M/6M/1Y/3Y/5Y returns, volatility and drawdown. NAV data is official AMFI data (updates after market close).</p>
+      </div>
+
+      <div class="signals-controls">
+        <div class="subtabs" id="fundCats"></div>
+        <div class="sig-tools">
+          <label class="amt">₹ Monthly SIP <input id="sipAmt" type="number" value="5000" min="100" step="500"></label>
+          <label class="amt">Years <input id="sipYears" type="number" value="10" min="1" max="40" step="1"></label>
+        </div>
+      </div>
+
+      <div id="sipCard" class="sip-card">
+        <div class="sip-inner">
+          <div>
+            <div class="stitle">SIP projection — pick a fund below (uses its 3-yr CAGR)</div>
+            <div class="big" id="sipResult">—</div>
+            <div class="detail" id="sipDetail">No fund selected</div>
+          </div>
+          <div class="sip-note">Expected growth is a projection from past returns, <b>not a guarantee</b>. Actual returns vary year to year.</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="fundsTable">
+          <thead>
+            <tr>
+              <th>Fund</th>
+              <th>Category</th>
+              <th class="num">NAV</th>
+              <th class="num">1M %</th>
+              <th class="num">3M %</th>
+              <th class="num">6M %</th>
+              <th class="num">1Y %</th>
+              <th class="num">3Y %</th>
+              <th class="num">5Y %</th>
+              <th>Risk</th>
+              <th>Max DD</th>
+              <th>Score</th>
+              <th>Rating</th>
+            </tr>
+          </thead>
+          <tbody id="fundsBody">
+            <tr><td colspan="12" class="empty">Loading mutual fund data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="footnote">AMFI NAVs via mfapi.in (free). 1M/3M/6M/1Y are simple returns; 3Y/5Y are annualised CAGR. "Risk" = annualised volatility; "Max DD" = max drawdown. Score is a composite — higher = better risk-adjusted history.</p>
+    </section>
+
+    <!-- ============ ADVISOR ============ -->
+    <section id="tab-advisor" class="panel">
+      <div class="advisor-layout">
+        <div class="advisor-chat-card">
+          <div class="signals-head">
+            <h2>🧠 Ask your AI Advisor</h2>
+            <p class="sub">Ask anything about buying, selling, goals or the market — it reads live data and answers.</p>
+          </div>
+          <div id="chatBox" class="chat-box">
+            <div class="chat-msg bot">Hi! I'm your financial advisor. Ask me things like:<br>• "Should I buy Reliance?"<br>• "Best Indian stocks today"<br>• "Best mutual funds"<br>• "I want ₹50 lakh in 10 years"<br>• "How is my portfolio?"</div>
+          </div>
+          <div class="chat-suggest" id="chatSuggest">
+            <button class="chip-btn">Should I buy Reliance?</button>
+            <button class="chip-btn">Best stocks today</button>
+            <button class="chip-btn">Best mutual funds</button>
+            <button class="chip-btn">₹50 lakh in 10 years</button>
+            <button class="chip-btn">How is my portfolio?</button>
+            <button class="chip-btn">How is bitcoin?</button>
+          </div>
+          <div class="chat-input-row">
+            <input id="chatInput" type="text" placeholder="Ask your advisor… e.g. 'Should I buy TCS?'" autocomplete="off">
+            <button class="btn primary" id="chatSend">Send ➤</button>
+          </div>
+        </div>
+
+        <div class="advisor-side-card">
+          <div class="signals-head">
+            <h2>🎯 Get advice on an asset</h2>
+            <p class="sub">Pick any stock/coin for a full BUY/HOLD/SELL breakdown.</p>
+          </div>
+          <div class="search-wrap"><input id="advSearch" type="text" placeholder="Search asset… e.g. RELIANCE, bitcoin, AAPL" autocomplete="off"></div>
+          <div id="advResult" class="adv-result">
+            <div class="stitle">Search an asset to see the advisor's full recommendation.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PLANNER ============ -->
+    <section id="tab-planner" class="panel">
+      <div class="signals-head">
+        <h2>🎯 Financial Planner</h2>
+        <p class="sub">Get a personalised asset allocation based on your profile, and plan how to reach your money goals.</p>
+      </div>
+      <div class="planner-grid">
+        <!-- risk profile -->
+        <div class="tool-card">
+          <h3>👤 My risk profile &amp; allocation</h3>
+          <div class="planner-form">
+            <div class="pf-row"><label>Age</label><input id="pfAge" type="number" value="30" min="18" max="90"></div>
+            <div class="pf-row"><label>Investing for (years)</label><input id="pfHorizon" type="number" value="10" min="1" max="40"></div>
+            <div class="pf-row"><label>Risk appetite</label>
+              <select id="pfAppetite"><option value="conservative">Conservative — safety first</option>
+              <option value="moderate" selected>Moderate — balanced</option>
+              <option value="aggressive">Aggressive — high growth</option></select></div>
+            <div class="pf-row"><label>Income stability</label>
+              <select id="pfStability"><option value="stable">Stable (salaried)</option>
+              <option value="moderate" selected>Moderate</option>
+              <option value="uncertain">Uncertain / variable</option></select></div>
+            <div class="pf-row"><label>Amount to invest (₹)</label><input id="pfAmount" type="number" value="100000" min="1000" step="1000"></div>
+            <button class="btn primary" id="pfRun" style="width:100%">🔍 Get my allocation</button>
+          </div>
+          <div id="pfResult" class="bt-result hidden"></div>
+        </div>
+
+        <!-- goal planner -->
+        <div class="tool-card">
+          <h3>🏁 Goal planner</h3>
+          <div class="planner-form">
+            <div class="pf-row"><label>Target amount (₹)</label><input id="gpTarget" type="number" value="5000000" min="10000" step="100000"></div>
+            <div class="pf-row"><label>Time (years)</label><input id="gpYears" type="number" value="10" min="1" max="40"></div>
+            <div class="pf-row"><label>Monthly SIP (optional)</label><input id="gpMonthly" type="number" value="0" min="0" step="500"></div>
+            <div class="pf-row"><label>Lumpsum today (optional)</label><input id="gpLumpsum" type="number" value="0" min="0" step="1000"></div>
+            <div class="pf-row"><label>Expected return % (annual)</label><input id="gpReturn" type="number" value="12" min="1" max="40" step="0.5"></div>
+            <button class="btn primary" id="gpRun" style="width:100%">🧮 Calculate plan</button>
+          </div>
+          <div id="gpResult" class="bt-result hidden"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ JOURNAL ============ -->
+    <section id="tab-journal" class="panel">
+      <div class="signals-head">
+        <h2>📒 Trading Journal</h2>
+        <p class="sub">Log your real buys &amp; sells to see your actual realized profit/loss, win-rate and best/worst trades.</p>
+      </div>
+      <div id="journalStats" class="js-stats"></div>
+      <div class="tool-card">
+        <h3>➕ Add a trade</h3>
+        <div class="tool-row">
+          <select id="jtSide"><option value="buy">BUY (bought)</option><option value="sell">SELL (sold)</option></select>
+          <div class="search-wrap"><input id="jtSearch" type="text" placeholder="Asset… e.g. RELIANCE, bitcoin" autocomplete="off"></div>
+          <input id="jtQty" type="number" step="any" min="0" placeholder="Qty">
+          <input id="jtPrice" type="number" step="any" min="0" placeholder="Price">
+          <input id="jtFees" type="number" step="any" min="0" placeholder="Fees ₹" value="0">
+          <input id="jtDate" type="date">
+          <button class="btn primary" id="jtAdd" disabled>＋ Log</button>
+        </div>
+        <div id="jtSelected" class="selected-info hidden"></div>
+        <div id="jtMsg" class="msg hidden"></div>
+      </div>
+      <div class="table-wrap" style="margin-top:14px">
+        <table id="journalTable">
+          <thead>
+            <tr><th>Date</th><th>Side</th><th>Asset</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Fees</th><th></th></tr>
+          </thead>
+          <tbody id="journalBody">
+            <tr><td colspan="7" class="empty">No trades logged yet. Add your first buy/sell above.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="journalClosed" class="js-closed"></div>
+    </section>
+
+    <!-- ============ SCREENER ============ -->
+    <section id="tab-screener" class="panel">
+      <div class="signals-head">
+        <h2>🔎 Fundamentals Screener</h2>
+        <p class="sub">Filter stocks by valuation &amp; fundamentals — P/E ratio, market cap, dividend yield, price-to-book and 52-week range — combined with our technical BUY/SELL score.</p>
+      </div>
+      <div class="signals-controls">
+        <div class="subtabs" id="scrSubtabs">
+          <button class="subtab active" data-market="stocks_in">🇮🇳 Indian Stocks</button>
+          <button class="subtab" data-market="stocks_us">🇺🇸 US Stocks</button>
+        </div>
+        <div class="sig-tools">
+          <select id="scrSort">
+            <option value="score">Sort: Technical score</option>
+            <option value="pe">Sort: P/E (low → high)</option>
+            <option value="div">Sort: Dividend yield</option>
+            <option value="mcap">Sort: Market cap</option>
+          </select>
+          <select id="scrFilter">
+            <option value="all">All stocks</option>
+            <option value="undervalued">Undervalued (P/E &lt; 20)</option>
+            <option value="dividend">Dividend payers</option>
+            <option value="buy">Technical BUY/STRONG BUY</option>
+            <option value="nearhigh">Near 52-wk high</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="scrTable">
+          <thead>
+            <tr>
+              <th>Stock</th>
+              <th class="num">Price</th>
+              <th class="num">P/E</th>
+              <th class="num">Fwd P/E</th>
+              <th class="num">Mkt Cap</th>
+              <th class="num">Div Yield</th>
+              <th class="num">P/B</th>
+              <th class="num">52w High</th>
+              <th class="num">52w Low</th>
+              <th>Sector</th>
+              <th>Score</th>
+              <th>Signal</th>
+            </tr>
+          </thead>
+          <tbody id="scrBody">
+            <tr><td colspan="12" class="empty">Loading fundamentals… (first load ~20s)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="footnote">Fundamentals from Yahoo Finance (yfinance), delayed. "Undervalued" = P/E under 20. Technical score comes from our Auto Picks engine.</p>
+    </section>
+
+    <!-- ============ TOOLS ============ -->
+    <section id="tab-tools" class="panel">
+      <div class="signals-head">
+        <h2>🧰 Portfolio Tools</h2>
+        <p class="sub">Backtest an investment, compare two assets, and track your daily profit/loss history.</p>
+      </div>
+
+      <div class="tools-grid">
+        <!-- backtest -->
+        <div class="tool-card">
+          <h3>⏪ Backtest — "What if I invested…"</h3>
+          <div class="tool-row">
+            <div class="search-wrap"><input id="btSearch" type="text" placeholder="Search asset… e.g. RELIANCE, bitcoin, AAPL" autocomplete="off"></div>
+            <input id="btAmount" type="number" value="10000" min="100" step="500" placeholder="Amount ₹/$">
+            <select id="btPeriod">
+              <option value="30">1 month</option>
+              <option value="90">3 months</option>
+              <option value="180">6 months</option>
+              <option value="365" selected>1 year</option>
+              <option value="1095">3 years</option>
+              <option value="1825">5 years</option>
+            </select>
+            <button class="btn primary" id="btRun" disabled>Run</button>
+          </div>
+          <div id="btSelected" class="selected-info hidden"></div>
+          <div id="btResult" class="bt-result">
+            <div class="stitle">Pick an asset and click Run</div>
+          </div>
+        </div>
+
+        <!-- compare -->
+        <div class="tool-card">
+          <h3>⚖️ Compare two assets (90 days)</h3>
+          <div class="tool-row">
+            <div class="search-wrap"><input id="cpSearch1" type="text" placeholder="Asset A…" autocomplete="off"></div>
+            <div class="search-wrap"><input id="cpSearch2" type="text" placeholder="Asset B…" autocomplete="off"></div>
+            <button class="btn primary" id="cpRun" disabled>Compare</button>
+          </div>
+          <div id="cpSelected" class="selected-info hidden"></div>
+          <div id="cpResult" class="bt-result">
+            <div class="stitle">Pick two assets and click Compare</div>
+          </div>
+        </div>
+
+        <!-- P&L history -->
+        <div class="tool-card">
+          <h3>📅 Your daily P&L history
+            <span style="float:right">
+              <button class="btn ghost" id="pnlSnap" style="padding:4px 10px;font-size:12px">Snapshot now</button>
+              <button class="btn ghost" id="pnlClear" style="padding:4px 10px;font-size:12px">Clear</button>
+            </span>
+          </h3>
+          <div id="pnlChartWrap"><canvas id="pnlChart" width="880" height="200" style="width:100%"></canvas></div>
+          <div id="pnlList" class="pnl-list"><div class="stitle">No history yet — add picks to My Picks and it will start tracking.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MY PICKS ============ -->
+    <section id="tab-picks" class="panel">
+      <div class="add-card">
+        <h2>Add a pick</h2>
+        <div class="add-row">
+          <div class="search-wrap">
+            <input id="searchInput" type="text" placeholder="Search… e.g. bitcoin, RELIANCE, AAPL" autocomplete="off">
+            <div id="searchResults" class="dropdown hidden"></div>
+          </div>
+          <input id="buyPrice" type="number" step="any" min="0" placeholder="Buy price" disabled>
+          <input id="qty" type="number" step="any" min="0" placeholder="Quantity" disabled>
+          <button id="addBtn" class="btn primary" disabled>＋ Add</button>
+        </div>
+        <div id="selectedInfo" class="selected-info hidden"></div>
+        <div id="addMsg" class="msg hidden"></div>
+      </div>
+
+      <div id="totalsRow" class="totals-row"></div>
+      <div id="healthBox" class="health-box"></div>
+
+      <div class="table-wrap">
+        <table id="picksTable">
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th class="num">Buy Price</th>
+              <th class="num">Qty</th>
+              <th class="num">Current</th>
+              <th class="num">Day %</th>
+              <th class="num">Invested</th>
+              <th class="num">Now Worth</th>
+              <th class="num">Profit / Loss</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="picksBody">
+            <tr><td colspan="9" class="empty">Your picks will appear here. Add your first stock or coin above 👆</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ DETAIL MODAL ============ -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- ============ ALERTS MODAL ============ -->
+  <div id="alertsModal" class="modal hidden">
+    <div class="modal-box">
+      <button class="modal-close" id="alertsClose">✕</button>
+      <div class="m-head">
+        <div class="m-name">🔔 Price Alerts</div>
+        <div class="m-sym">Get notified when a price hits your level</div>
+      </div>
+      <div class="alert-custom">
+        <div class="search-wrap">
+          <input id="aSearch" type="text" placeholder="Search asset… e.g. RELIANCE, bitcoin, AAPL" autocomplete="off">
+        </div>
+        <input id="aLevel" type="number" step="any" min="0" placeholder="Price level">
+        <select id="aDir">
+          <option value="above">Rises above ↑</option>
+          <option value="below">Falls below ↓</option>
+        </select>
+        <button class="btn primary" id="aAdd" disabled>＋ Set</button>
+      </div>
+      <div id="aSelected" class="selected-info hidden"></div>
+      <div id="aMsg" class="msg hidden"></div>
+      <div id="alertsList" class="alerts-list"></div>
+      <div class="alert-hint">💡 Tip: click the 🔔 next to any Auto Pick to watch its target &amp; stop-loss. Alerts fire while this dashboard is open; enable browser notifications for popups.</div>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS MODAL ============ -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-box">
+      <button class="modal-close" id="settingsClose">✕</button>
+      <div class="m-head">
+        <div class="m-name">⚙️ Email Alert Settings</div>
+        <div class="m-sym">Get price alerts on your phone/email, even when this dashboard is closed</div>
+      </div>
+      <label class="chk"><input type="checkbox" id="sEmailEnabled"> Enable email alerts</label>
+      <div class="settings-form">
+        <div class="sf-row"><label>SMTP host</label><input id="sHost" type="text" placeholder="smtp.gmail.com"></div>
+        <div class="sf-row"><label>Port</label><input id="sPort" type="number" placeholder="587"></div>
+        <div class="sf-row"><label>SMTP user (your email)</label><input id="sUser" type="text" placeholder="you@gmail.com"></div>
+        <div class="sf-row"><label>App password</label><input id="sPass" type="password" placeholder="••••••••••••••••"></div>
+        <div class="sf-row"><label>Send alerts to</label><input id="sTo" type="text" placeholder="receive@email.com"></div>
+      </div>
+
+      <div class="settings-section">📨 Daily advisory email</div>
+      <label class="chk"><input type="checkbox" id="sDailyEmail"> Send me a morning summary every day</label>
+      <div class="settings-form">
+        <div class="sf-row"><label>Time (24h, IST)</label><input id="sDailyTime" type="text" placeholder="08:00" value="08:00"></div>
+      </div>
+
+      <div class="settings-section">🔑 Free API keys (optional — more live data)</div>
+      <div class="settings-form">
+        <div class="sf-row"><label>Twelve Data key</label><input id="sTwelve" type="text" placeholder="twelvedata.com (free)"></div>
+        <div class="sf-row"><label>Finnhub key</label><input id="sFinnhub" type="text" placeholder="finnhub.io (free)"></div>
+        <div class="sf-row"><label>Alpha Vantage key</label><input id="sAlpha" type="text" placeholder="alphavantage.co (free)"></div>
+      </div>
+      <div class="alert-hint">Get free keys at <b>twelvedata.com</b>, <b>finnhub.io</b> or <b>alphavantage.co</b>. They add real-time/live US &amp; global quotes. Your dashboard already works without them.</div>
+
+      <div class="settings-section">📱 Telegram bot (free phone alerts + chat with advisor)</div>
+      <label class="chk"><input type="checkbox" id="sTelegramEnabled"> Enable Telegram</label>
+      <div class="settings-form">
+        <div class="sf-row"><label>Bot token (from @BotFather)</label><input id="sTelegramToken" type="text" placeholder="123456:ABC-DEF…"></div>
+        <div class="sf-row"><label>Your chat id</label><input id="sTelegramChat" type="text" placeholder="e.g. 123456789"></div>
+      </div>
+      <div class="settings-actions">
+        <button class="btn ghost" id="sTelegramGetId" style="padding:7px 10px;font-size:12.5px">📲 Auto-find my chat id</button>
+        <button class="btn ghost" id="sTelegramTest" style="padding:7px 10px;font-size:12.5px">📱 Send test message</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="sTelegramDaily"> Also send me the daily morning summary on Telegram</label>
+      <div id="tgStatus" class="msg hidden"></div>
+      <div class="alert-hint">Free setup: open Telegram → search <b>@BotFather</b> → <code>/newbot</code> → copy the token. Then send <b>any message</b> to your new bot and click <b>Auto-find my chat id</b>. You can then chat with your advisor from Telegram (try <code>/help</code>).</div>
+
+      <div class="settings-section">⚡ Zerodha Kite (true NSE live + your real holdings)</div>
+      <label class="chk"><input type="checkbox" id="sZerodhaEnabled"> Use Zerodha Kite for live prices</label>
+      <div class="settings-form">
+        <div class="sf-row"><label>API key</label><input id="sZKey" type="text" placeholder="from developers.kite.trade"></div>
+        <div class="sf-row"><label>API secret</label><input id="sZSecret" type="password" placeholder="••••••••"></div>
+        <div class="sf-row"><label>Access token</label><input id="sZToken" type="password" placeholder="generated after login"></div>
+      </div>
+      <div id="zStatus" class="msg hidden"></div>
+      <div class="alert-hint">Free Zerodha account → <b>developers.kite.trade</b> → create app → get API key &amp; secret → generate an <b>access token</b> (needs `pip install kiteconnect`). This enables true NSE live prices and your actual holdings.</div>
+
+      <div class="settings-section">🇮🇳 Angel One SmartAPI (free real-time NSE for Angel One customers)</div>
+      <label class="chk"><input type="checkbox" id="sAngelEnabled"> Use Angel One for live NSE prices</label>
+      <div class="settings-form">
+        <div class="sf-row"><label>Client code (your Angel login id)</label><input id="sAngelClient" type="text" placeholder="e.g. A123456"></div>
+        <div class="sf-row"><label>Password</label><input id="sAngelPass" type="password" placeholder="••••••••"></div>
+        <div class="sf-row"><label>API key (from smartapi.angelbroking.com)</label><input id="sAngelKey" type="text" placeholder="API key"></div>
+        <div class="sf-row"><label>TOTP (from authenticator app)</label><input id="sAngelTotp" type="password" placeholder="6-digit code"></div>
+      </div>
+      <div class="settings-actions">
+        <button class="btn ghost" id="sAngelTest" style="padding:7px 10px;font-size:12.5px">🇮🇳 Test Angel One (live RELIANCE price)</button>
+      </div>
+      <div id="angelStatus" class="msg hidden"></div>
+      <div class="alert-hint">Free with an <b>Angel One</b> account: register at smartapi.angelbroking.com, create an app to get the API key, and use your normal login + authenticator TOTP. Needs <code>pip install smartapi-python</code>. Gives true NSE real-time prices + candles.</div>
+
+      <div class="settings-section">🔎 Google Finance fallback (free, no key)</div>
+      <label class="chk"><input type="checkbox" id="sGoogleFin"> Use Google Finance as fallback when Yahoo is blocked (recommended)</label>
+      <div class="alert-hint">Google Finance has no official API, so this parses the public quote page as a safety net when Yahoo Finance is slow or blocked. No key needed.</div>
+
+      <div class="settings-actions">
+        <button class="btn primary" id="sSave">💾 Save all</button>
+        <button class="btn ghost" id="sTest">📧 Send test email</button>
+      </div>
+      <div id="sMsg" class="msg hidden"></div>
+      <div class="alert-hint">For <b>Gmail</b>: enable 2-Step Verification, then create an <b>App Password</b> (Google Account → Security → App passwords). Credentials are stored only in your workspace (<code>data/settings.json</code>).</div>
+    </div>
+  </div>
+
+  <div id="toasts" class="toasts"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# Optional integrations — install these ONLY if you want:
+#   - Zerodha Kite  (true real-time NSE + your holdings)
+#   - Angel One SmartAPI (free real-time NSE for Angel One customers)
+# The dashboard runs perfectly without them.
+kiteconnect
+smartapi-python
